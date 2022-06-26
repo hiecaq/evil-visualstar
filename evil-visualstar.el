@@ -61,11 +61,12 @@ You will need to hit escape to leave visual-mode."
   :group 'evil-visualstar
   :type 'boolean)
 
-(defun evil-visualstar/begin-search (beg end direction)
+(defun evil-visualstar/begin-search (beg end direction symbol)
   (when (evil-visual-state-p)
     (evil-exit-visual-state))
   (let ((found)
-        (selection (regexp-quote (buffer-substring-no-properties beg end))))
+        (selection (format (if symbol "\\_<%s\\_>" "\\<%s\\>")
+                           (regexp-quote (buffer-substring-no-properties beg end)))))
     (if (eq evil-search-module 'isearch)
         (progn
           (setq isearch-forward direction)
@@ -84,44 +85,29 @@ You will need to hit escape to leave visual-mode."
     (when (and evil-visualstar/persistent found)
       (push-mark (+ (point) (- end beg)) nil t))))
 
+(evil-define-operator evil-visualstar-operator-backward-symbol (beg end)
+  "Search for motion forwards."
+  :repeat nil
+  :keep-visual nil
+  (evil-visualstar/begin-search beg end nil t))
+
+(evil-define-operator evil-visualstar-operator-forward-symbol (beg end)
+  "Search for motion forwards."
+  :repeat nil
+  :keep-visual nil
+  (evil-visualstar/begin-search beg end t t))
+
 (evil-define-operator evil-visualstar-operator-backward (beg end)
   "Search for motion forwards."
   :repeat nil
   :keep-visual nil
-  (evil-visualstar/begin-search beg end nil))
+  (evil-visualstar/begin-search beg end nil nil))
 
 (evil-define-operator evil-visualstar-operator-forward (beg end)
   "Search for motion forwards."
   :repeat nil
   :keep-visual nil
-  (evil-visualstar/begin-search beg end t))
-
-;;;###autoload
-(define-minor-mode evil-visualstar-mode
-  "Minor mode for visual star selection."
-  :keymap (let ((map (make-sparse-keymap)))
-            (evil-define-key 'visual map (kbd "*") #'evil-visualstar-operator-forward)
-            (evil-define-key 'visual map (kbd "#") #'evil-visualstar-operator-backward)
-            (define-key map [remap evil-ex-search-word-forward] #'evil-visualstar-operator-forward)
-            (define-key map [remap evil-ex-search-word-backward] #'evil-visualstar-operator-backward)
-            map)
-  (evil-normalize-keymaps))
-
-;;;###autoload
-(define-globalized-minor-mode global-evil-visualstar-mode
-  evil-visualstar-mode turn-on-evil-visualstar-mode)
-
-;;;###autoload
-(defun turn-on-evil-visualstar-mode ()
-  "Turns on visual star selection."
-  (interactive)
-  (evil-visualstar-mode t))
-
-;;;###autoload
-(defun turn-off-evil-visualstar-mode ()
-  "Turns off visual star selection."
-  (interactive)
-  (evil-visualstar-mode -1))
+  (evil-visualstar/begin-search beg end t nil))
 
 (provide 'evil-visualstar)
 ;;; evil-visualstar.el ends here
