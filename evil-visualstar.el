@@ -1,4 +1,4 @@
-;;; evil-visualstar.el --- Starts a * or # search from the visual selection
+;;; evil-visualstar.el --- Starts a * or # search from the visual selection  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2013 by Bailey Ling
 ;; Author: Bailey Ling
@@ -63,47 +63,47 @@ You will need to hit escape to leave visual-mode."
 
 (defun evil-visualstar/begin-search (beg end direction)
   (when (evil-visual-state-p)
-    (evil-exit-visual-state)
-    (let ((found)
-          (selection (regexp-quote (buffer-substring-no-properties beg end))))
-      (if (eq evil-search-module 'isearch)
-          (progn
-            (setq isearch-forward direction)
-            (setq found (evil-search selection direction t)))
-        (let ((pattern (evil-ex-make-search-pattern selection))
-              (direction (if direction 'forward 'backward)))
-          (setq evil-ex-search-direction direction)
-          (setq evil-ex-search-pattern pattern)
-          (evil-ex-search-activate-highlight pattern)
-          ;; update search history unless this pattern equals the
-          ;; previous pattern
-          (unless (equal (car-safe evil-ex-search-history) selection)
-            (push selection evil-ex-search-history))
-          (evil-push-search-history selection (eq direction 'forward))
-          (setq found (evil-ex-search-next))))
-      (when (and evil-visualstar/persistent found)
-        (push-mark (+ (point) (- end beg)) nil t)))))
+    (evil-exit-visual-state))
+  (let ((found)
+        (selection (regexp-quote (buffer-substring-no-properties beg end))))
+    (if (eq evil-search-module 'isearch)
+        (progn
+          (setq isearch-forward direction)
+          (setq found (evil-search selection direction t)))
+      (let ((pattern (evil-ex-make-search-pattern selection))
+            (direction (if direction 'forward 'backward)))
+        (setq evil-ex-search-direction direction)
+        (setq evil-ex-search-pattern pattern)
+        (evil-ex-search-activate-highlight pattern)
+        ;; update search history unless this pattern equals the
+        ;; previous pattern
+        (unless (equal (car-safe evil-ex-search-history) selection)
+          (push selection evil-ex-search-history))
+        (evil-push-search-history selection (eq direction 'forward))
+        (setq found (evil-ex-search-next))))
+    (when (and evil-visualstar/persistent found)
+      (push-mark (+ (point) (- end beg)) nil t))))
 
-(evil-define-motion evil-visualstar/begin-search-forward (beg end)
-  "Search for the visual selection forwards."
-  :jump t
+(evil-define-operator evil-visualstar-operator-backward (beg end)
+  "Search for motion forwards."
   :repeat nil
-  (interactive "<r>")
-  (evil-visualstar/begin-search beg end t))
-
-(evil-define-motion evil-visualstar/begin-search-backward (beg end)
-  "Search for the visual selection backwards."
-  :jump t
-  :repeat nil
-  (interactive "<r>")
+  :keep-visual nil
   (evil-visualstar/begin-search beg end nil))
+
+(evil-define-operator evil-visualstar-operator-forward (beg end)
+  "Search for motion forwards."
+  :repeat nil
+  :keep-visual nil
+  (evil-visualstar/begin-search beg end t))
 
 ;;;###autoload
 (define-minor-mode evil-visualstar-mode
   "Minor mode for visual star selection."
   :keymap (let ((map (make-sparse-keymap)))
-            (evil-define-key 'visual map (kbd "*") #'evil-visualstar/begin-search-forward)
-            (evil-define-key 'visual map (kbd "#") #'evil-visualstar/begin-search-backward)
+            (evil-define-key 'visual map (kbd "*") #'evil-visualstar-operator-forward)
+            (evil-define-key 'visual map (kbd "#") #'evil-visualstar-operator-backward)
+            (define-key map [remap evil-ex-search-word-forward] #'evil-visualstar-operator-forward)
+            (define-key map [remap evil-ex-search-word-backward] #'evil-visualstar-operator-backward)
             map)
   (evil-normalize-keymaps))
 
